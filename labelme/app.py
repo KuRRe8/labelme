@@ -387,6 +387,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Create a duplicate of the selected polygons"),
             enabled=False,
         )
+        rotate = action(
+            self.tr("Rotate Polygons"),
+            self.rotateSelectedShape,
+            None,
+            "rot",
+            self.tr("Rotate the selected polygons"),
+            checkable=True,#可切换是否在旋转的状态
+            enabled=False,#只有在单多边形状态选中后enable
+            checked=False,
+        )
         undoLastPoint = action(
             self.tr("Undo last point"),
             self.canvas.undoLastPoint,
@@ -567,6 +577,7 @@ class MainWindow(QtWidgets.QMainWindow):
             delete=delete,
             edit=edit,
             copy=copy,
+            rotate=rotate,
             undoLastPoint=undoLastPoint,
             undo=undo,
             addPointToEdge=addPointToEdge,
@@ -614,6 +625,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 editMode,
                 edit,
                 copy,
+                rotate,
                 delete,
                 undo,
                 undoLastPoint,
@@ -715,6 +727,7 @@ class MainWindow(QtWidgets.QMainWindow):
             createMode,
             editMode,
             copy,
+            rotate,
             delete,
             undo,
             brightnessContrast,
@@ -1098,6 +1111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.delete.setEnabled(n_selected)
         self.actions.copy.setEnabled(n_selected)
         self.actions.edit.setEnabled(n_selected == 1)
+        self.actions.rotate.setEnabled(n_selected == 1)#选择一个时候可以旋转操作
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1259,6 +1273,23 @@ class MainWindow(QtWidgets.QMainWindow):
         for shape in added_shapes:
             self.addLabel(shape)
         self.setDirty()
+
+    def rotateSelectedShape(self):
+        '''
+        切换是否旋转
+        mode 0创建，1编辑，2旋转
+        '''
+        if self.canvas.mode is not self.canvas.ROTATE:
+            self.canvas.mode = self.canvas.ROTATE
+            self.actions.delete.setEnabled(False)
+            self.actions.copy.setEnabled(False)
+            self.actions.edit.setEnabled(False)
+        else:
+            self.canvas.mode = self.canvas.EDIT
+            self.actions.delete.setEnabled(True)
+            self.actions.copy.setEnabled(True)
+            self.actions.edit.setEnabled(True)
+        pass
 
     def labelSelectionChanged(self):
         if self._noSelectionSlot:

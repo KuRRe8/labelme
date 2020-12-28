@@ -281,6 +281,16 @@
         <translation>为选中的多边形创建副本</translation>
     </message>
     <message>
+        <location filename="../app.py" line="99999999"/>
+        <source>Rotate Polygons</source>
+        <translation>旋转多边形</translation>
+    </message>
+    <message>
+        <location filename="../app.py" line="99999999"/>
+        <source>Rotate the selected polygons</source>
+        <translation>将选中的多边形旋转</translation>
+    </message>
+    <message>
         <location filename="../app.py" line="314"/>
         <source>Undo last point</source>
         <translation>撤销最后的控制点</translation>

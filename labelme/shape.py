@@ -3,6 +3,7 @@ import math
 
 from qtpy import QtCore
 from qtpy import QtGui
+import numpy as np
 
 import labelme.utils
 
@@ -253,6 +254,26 @@ class Shape(object):
 
     def moveBy(self, offset):
         self.points = [p + offset for p in self.points]
+
+    def rotateBy(self, prevpos:QtCore.QPointF, pos:QtCore.QPointF, limit:QtCore.QRect):
+        points = np.array([np.array([point.x(), point.y()]) for point in self.points])
+        center = np.mean(points, axis=0)
+        vec1 = np.array([prevpos.x(), prevpos.y()]) - center
+        vec1 = vec1 / np.linalg.norm(vec1)
+        vec2 = np.array([pos.x(), pos.y()]) - center
+        vec2 = vec2 / np.linalg.norm(vec2)
+        sin_theta = np.cross(vec1, vec2)
+        cos_theta = np.dot(vec1, vec2)
+        theta = np.arcsin(sin_theta) if cos_theta > 0 else np.pi - np.arcsin(sin_theta)
+        R = np.eye(2)
+        R[0, 0], R[1, 1] = np.cos(theta), np.cos(theta)
+        R[0, 1], R[1, 0] = np.sin(-theta), np.sin(theta)
+        points = R.dot((points - center).T).T + center
+        temp = [QtCore.QPointF(point[0], point[1]) for point in points]
+        for t in temp:
+            if t.x()<0 or t.x()>limit.width() or t.y()<0 or t.y()>limit.height():
+                return False
+        self.points = temp
 
     def moveVertexBy(self, i, offset):
         self.points[i] = self.points[i] + offset

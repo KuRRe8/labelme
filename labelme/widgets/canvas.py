@@ -29,7 +29,7 @@ class Canvas(QtWidgets.QWidget):
     edgeSelected = QtCore.Signal(bool, object)
     vertexSelected = QtCore.Signal(bool)
 
-    CREATE, EDIT = 0, 1
+    CREATE, EDIT, ROTATE = 0, 1, 2
 
     # polygon, rectangle, line, or point
     _createMode = "polygon"
@@ -151,6 +151,9 @@ class Canvas(QtWidgets.QWidget):
     def editing(self):
         return self.mode == self.EDIT
 
+    def rotating(self):
+        return self.mode == self.ROTATE
+
     def setEditing(self, value=True):
         self.mode = self.EDIT if value else self.CREATE
         if not value:  # Create
@@ -178,8 +181,8 @@ class Canvas(QtWidgets.QWidget):
                 pos = self.transformPos(ev.posF())
         except AttributeError:
             return
-
-        self.prevMovePoint = pos
+        if not self.rotating():
+            self.prevMovePoint = pos
         self.restoreCursor()
 
         # Polygon drawing.
@@ -238,15 +241,25 @@ class Canvas(QtWidgets.QWidget):
 
         # Polygon/Vertex moving.
         if QtCore.Qt.LeftButton & ev.buttons():
-            if self.selectedVertex():
-                self.boundedMoveVertex(pos)
-                self.repaint()
-                self.movingShape = True
-            elif self.selectedShapes and self.prevPoint:
-                self.overrideCursor(CURSOR_MOVE)
-                self.boundedMoveShapes(self.selectedShapes, pos)
-                self.repaint()
-                self.movingShape = True
+            if self.rotating():
+                assert(self.selectedShapes)
+                if self.prevMovePoint:
+                    self.overrideCursor(CURSOR_MOVE)
+                    self.RotateShapes(self.selectedShapes[0], self.prevMovePoint, pos, self.pixmap.rect())
+                    self.repaint()
+                    self.movingShape = True
+                    pass
+                self.prevMovePoint = pos
+            else:
+                if self.selectedVertex():
+                    self.boundedMoveVertex(pos)
+                    self.repaint()
+                    self.movingShape = True
+                elif self.selectedShapes and self.prevPoint:
+                    self.overrideCursor(CURSOR_MOVE)
+                    self.boundedMoveShapes(self.selectedShapes, pos)
+                    self.repaint()
+                    self.movingShape = True
             return
 
         # Just hovering over the canvas, 2 possibilities:
@@ -322,7 +335,10 @@ class Canvas(QtWidgets.QWidget):
         else:
             pos = self.transformPos(ev.posF())
         if ev.button() == QtCore.Qt.LeftButton:
-            if self.drawing():
+            if self.rotating():
+                self.prevMovePoint = QtCore.QPoint(round(pos.x()),round(pos.y()))
+                return
+            elif self.drawing():
                 if self.current:
                     # Add point to existing shape.
                     if self.createMode == "polygon":
@@ -352,11 +368,13 @@ class Canvas(QtWidgets.QWidget):
                         self.setHiding()
                         self.drawingPolygon.emit(True)
                         self.update()
-            else:
+            elif self.editing():
                 group_mode = int(ev.modifiers()) == QtCore.Qt.ControlModifier
                 self.selectShapePoint(pos, multiple_selection_mode=group_mode)
                 self.prevPoint = pos
                 self.repaint()
+            else:
+                pass
         elif ev.button() == QtCore.Qt.RightButton and self.editing():
             group_mode = int(ev.modifiers()) == QtCore.Qt.ControlModifier
             self.selectShapePoint(pos, multiple_selection_mode=group_mode)
@@ -506,6 +524,9 @@ class Canvas(QtWidgets.QWidget):
             self.prevPoint = pos
             return True
         return False
+
+    def RotateShapes(self,shape:Shape,prevpos,pos,picturebounding:QtCore.QRect):
+        shape.rotateBy(prevpos,pos,picturebounding)
 
     def deSelectShape(self):
         if self.selectedShapes:
@@ -718,6 +739,37 @@ class Canvas(QtWidgets.QWidget):
             self.update()
         elif key == QtCore.Qt.Key_Return and self.canCloseShape():
             self.finalise()
+        elif key == QtCore.Qt.Key_Space:
+            if self.drawing():
+                if self.current:
+                    # Add point to existing shape.
+                    if self.createMode == "polygon":
+                        self.current.addPoint(self.line[1])
+                        self.line[0] = self.current[-1]
+                        if self.current.isClosed():
+                            self.finalise()
+                    elif self.createMode in ["rectangle", "circle", "line"]:
+                        assert len(self.current.points) == 1
+                        self.current.points = self.line.points
+                        self.finalise()
+                    elif self.createMode == "linestrip":
+                        self.current.addPoint(self.line[1])
+                        self.line[0] = self.current[-1]
+                        if int(ev.modifiers()) == QtCore.Qt.ControlModifier:
+                            self.finalise()
+                elif not self.outOfPixmap(self.prevMovePoint):
+                    # Create new shape.
+                    self.current = Shape(shape_type=self.createMode)
+                    self.current.addPoint(self.prevMovePoint)
+                    if self.createMode == "point":
+                        self.finalise()
+                    else:
+                        if self.createMode == "circle":
+                            self.current.shape_type = "circle"
+                        self.line.points = [self.prevMovePoint, self.prevMovePoint]
+                        self.setHiding()
+                        self.drawingPolygon.emit(True)
+                        self.update()
 
     def setLastLabel(self, text, flags):
         assert text
