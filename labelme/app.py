@@ -1279,7 +1279,7 @@ class MainWindow(QtWidgets.QMainWindow):
         切换是否旋转
         mode 0创建，1编辑，2旋转
         '''
-        if self.canvas.mode is not self.canvas.ROTATE:
+        if self.actions.rotate.isChecked():
             self.canvas.mode = self.canvas.ROTATE
             self.actions.delete.setEnabled(False)
             self.actions.copy.setEnabled(False)
