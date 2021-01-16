@@ -390,7 +390,7 @@ class MainWindow(QtWidgets.QMainWindow):
         rotate = action(
             self.tr("Rotate Polygons"),
             self.rotateSelectedShape,
-            None,
+            shortcuts["toggle_rotate"],
             "rot",
             self.tr("Rotate the selected polygons"),
             checkable=True,#可切换是否在旋转的状态
