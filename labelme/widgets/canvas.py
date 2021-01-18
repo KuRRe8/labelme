@@ -83,6 +83,7 @@ class Canvas(QtWidgets.QWidget):
         # Set widget options.
         self.setMouseTracking(True)
         self.setFocusPolicy(QtCore.Qt.WheelFocus)
+        self.canrotate = False
 
     def fillDrawing(self):
         return self._fill_drawing
@@ -733,6 +734,8 @@ class Canvas(QtWidgets.QWidget):
 
     def keyPressEvent(self, ev):
         key = ev.key()
+        if key == QtCore.Qt.Key_Alt and self.canrotate:
+            self.mode = self.ROTATE
         if key == QtCore.Qt.Key_Escape and self.current:
             self.current = None
             self.drawingPolygon.emit(False)
@@ -770,6 +773,11 @@ class Canvas(QtWidgets.QWidget):
                         self.setHiding()
                         self.drawingPolygon.emit(True)
                         self.update()
+
+    def keyReleaseEvent(self,ev):
+        key = ev.key()
+        if key == QtCore.Qt.Key_Alt and self.canrotate:
+            self.mode = self.EDIT
 
     def setLastLabel(self, text, flags):
         assert text

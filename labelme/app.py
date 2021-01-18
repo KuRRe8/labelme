@@ -1112,6 +1112,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.copy.setEnabled(n_selected)
         self.actions.edit.setEnabled(n_selected == 1)
         self.actions.rotate.setEnabled(n_selected == 1)#选择一个时候可以旋转操作
+        self.canvas.canrotate = bool(n_selected == 1)
 
     def addLabel(self, shape):
         if shape.group_id is None:
