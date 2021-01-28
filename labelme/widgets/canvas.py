@@ -778,6 +778,7 @@ class Canvas(QtWidgets.QWidget):
         key = ev.key()
         if key == QtCore.Qt.Key_Alt and self.canrotate:
             self.mode = self.EDIT
+            self.shapeMoved.emit()
 
     def setLastLabel(self, text, flags):
         assert text
